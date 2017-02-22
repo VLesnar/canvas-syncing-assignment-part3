@@ -1,13 +1,186 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+	<script src="/socket.io/socket.io.js"></script>
     <script src="https://npmcdn.com/babel-core@5.8.38/browser.min.js"></script>
     <script type="text/babel" >
         "use strict";
-    
+    	
+		let socket;
+		let canvas;
+		let ctx;
+		let squares = {};
+		let hash;
+		let redUp = false;		// r held
+		let redDown = false;	// t held
+		let greenUp = false;	// g held
+		let greenDown = false;	// h held
+		let blueUp = false;		// b held
+		let blueDown = false;	// n held
+
+		const update = (data) => {
+			if(!squares[data.hash]) {
+				squares[data.hash] = data;
+				return;
+			}
+			
+			const square = squares[data.hash];
+			
+			if(square.lastUpdate >= data.lastUpdate) {
+			   return;
+		   	}
+			
+			square.lastUpdate = data.lastUpdate;
+			
+			requestAnimationFrame(redraw);
+			//socket.emit('update', square);
+		};
+
+		const updateColor = () => {
+			const square = squares[hash];
+			
+			if(redUp && square.r <= 255) {
+				square.r += 5;
+			}
+			
+			if(redDown && square.r >= 0) {
+				square.r -= 5;
+			}
+			
+			if(greenUp && square.g <= 255) {
+				square.g += 5;
+			}
+			
+			if(greenDown && square.g >= 0) {
+				square.g += 5;
+			}
+			
+			if(blueUp && square.b <= 255) {
+				square.b += 5;
+			}
+			
+			if(blueDown && square.b >= 0) {
+				square.b += 5;
+			}
+		};
+
+		const redraw = (time) => {
+			updateColor();
+			
+			ctx.clearRect(0, 0, 500, 500);
+			
+			const keys = Object.keys(squares);
+			
+			for(let i = 0; i < keys.length; i++) {
+				const square = squares[keys[i]];
+				
+				ctx.fillStyle = "rgb("+square.r+","+ square.g+"," +square.b+")";
+				
+				ctx.fillRect(square.x, square.y, square.width, square.height);
+			}
+			
+			requestAnimationFrame(redraw);
+		};
+
+		const setUser = (data) => {
+			hash = data.hash;
+			squares[hash] = data;
+			requestAnimationFrame(redraw);
+		};
+
+		const removeUser = (data) => {
+			if(squares[hash]) {
+				delete squares[hash];
+			}
+		};
+
+        const keyDownHandler = (e) => {  
+          var keyPressed = e.which;
+
+          // R
+          if(keyPressed === 82) {
+            redUp = true;
+          }
+          // T
+          else if(keyPressed === 84) {
+            redDown = true;
+          }
+          // G
+          else if(keyPressed === 71) {
+            greenUp = true;
+          }
+          // H
+          else if(keyPressed === 72) {
+            greenDown = true;
+          }
+			// B
+          else if(keyPressed === 66) {
+            blueUp = true;
+          }
+          // N
+          else if(keyPressed === 78) {
+            blueDown = true;
+          }
+
+          //if one of these keys is down, let's cancel the browsers
+          //default action so the page doesn't try to scroll on the user
+          //if(moveUp || moveDown || moveLeft || moveRight) {
+            //e.preventDefault();
+          //}
+        };
+        
+        const keyUpHandler = (e) => {
+          var keyPressed = e.which;
+
+           // R
+          if(keyPressed === 82) {
+            redUp = false;
+          }
+          // T
+          else if(keyPressed === 84) {
+            redDown = false;
+          }
+          // G
+          else if(keyPressed === 71) {
+            greenUp = false;
+          }
+          // H
+          else if(keyPressed === 72) {
+            greenDown = false;
+          }
+			// B
+          else if(keyPressed === 66) {
+            blueUp = false;
+          }
+          // N
+          else if(keyPressed === 78) {
+            blueDown = false;
+          }       
+        };
+
+		const init = () => {
+			ctx = document.getElementById('canvas').getContext("2d");
+			canvas = document.querySelector("#canvas");
+			
+			socket = io.connect();
+			
+			socket.on('joined', setUser);
+			
+			socket.on('updatedColor', update);
+			
+			socket.on('disconnect', removeUser);
+			
+			document.body.addEventListener('keydown', keyDownHandler);
+			document.body.addEventListener('keyup', keyUpHandler);			
+		};
+
+		window.onload = init;
     </script>
 </head>
 <body>
-
+	<canvas id="canvas" height="500" width="500" style="border:1px solid #000000;"></canvas>
+	<p>Press R to make your square redder, T for less red.</p>
+	<p>Press G to make your square redder, H for less red.</p>
+	<p>Press B to make your square redder, N for less red.</p>
 </body>
 </html>
