@@ -23,10 +23,10 @@ app.listen(port);
 
 io.on('connection', (socket) => {
   const sock = socket;
-  sock.join('room1');
+  socket.join('room1');
 
   sock.square = {
-    hash: xxh.h32(`${sock.id}${new Date().getTime()}`, 0xCAFEBABE).toString(16),
+    hash: xxh.h32(`${socket.id}${new Date().getTime()}`, 0xCAFEBABE).toString(16),
     lastUpdate: new Date().getTime(),
     x: Math.floor(Math.random() * (500 - 50)) + 50,
     y: Math.floor(Math.random() * (500 - 50)) + 50,
@@ -37,18 +37,18 @@ io.on('connection', (socket) => {
     width: 100,
   };
 
-  sock.emit('joined', sock.square);
+  socket.emit('joined', socket.square);
 
-  sock.on('update', (data) => {
+  socket.on('colorUpdate', (data) => {
     sock.square = data;
     sock.square.lastUpdate = new Date().getTime();
-	sock.broadcast.to('room1').emit('updatedColor', sock.square);
+    socket.broadcast.to('room1').emit('updatedColor', socket.square);
   });
 
-  sock.on('disconnect', () => {
-    io.sockets.in('room1').emit('disconnect', sock.square.hash);
+  socket.on('disconnect', () => {
+    io.sockets.in('room1').emit('left', sock.square.hash);
 
-    sock.leave('room1');
+    socket.leave('room1');
   });
 });
 

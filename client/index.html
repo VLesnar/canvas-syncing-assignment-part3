@@ -32,8 +32,24 @@
 			
 			square.lastUpdate = data.lastUpdate;
 			
+			square.r = data.r;
+			square.g = data.g;
+			square.b = data.b;
+		};
+
+
+		const removeUser = (hash) => {
+			console.dir(squares);
+			if(squares[hash]) {
+				delete squares[hash];
+			}
+		};
+
+		const setUser = (data) => {
+			hash = data.hash;
+			squares[hash] = data;
 			requestAnimationFrame(redraw);
-			//socket.emit('update', square);
+						console.dir(squares);
 		};
 
 		const updateColor = () => {
@@ -52,7 +68,7 @@
 			}
 			
 			if(greenDown && square.g >= 0) {
-				square.g += 5;
+				square.g -= 5;
 			}
 			
 			if(blueUp && square.b <= 255) {
@@ -60,8 +76,10 @@
 			}
 			
 			if(blueDown && square.b >= 0) {
-				square.b += 5;
+				square.b -= 5;
 			}
+	
+			socket.emit('colorUpdate', square);
 		};
 
 		const redraw = (time) => {
@@ -74,24 +92,18 @@
 			for(let i = 0; i < keys.length; i++) {
 				const square = squares[keys[i]];
 				
-				ctx.fillStyle = "rgb("+square.r+","+ square.g+"," +square.b+")";
-				
+				if(square.hash === hash) {
+					ctx.fillStyle = "rgb("+squares[hash].r+","+ squares[hash].g+"," +squares[hash].b+")";
+				}
+				else {
+					ctx.fillStyle = "rgb("+square.r+","+ square.g+"," +square.b+")";
+				}
+				//ctx.save();
 				ctx.fillRect(square.x, square.y, square.width, square.height);
+				//ctx.restore();
 			}
 			
 			requestAnimationFrame(redraw);
-		};
-
-		const setUser = (data) => {
-			hash = data.hash;
-			squares[hash] = data;
-			requestAnimationFrame(redraw);
-		};
-
-		const removeUser = (data) => {
-			if(squares[hash]) {
-				delete squares[hash];
-			}
 		};
 
         const keyDownHandler = (e) => {  
@@ -121,12 +133,6 @@
           else if(keyPressed === 78) {
             blueDown = true;
           }
-
-          //if one of these keys is down, let's cancel the browsers
-          //default action so the page doesn't try to scroll on the user
-          //if(moveUp || moveDown || moveLeft || moveRight) {
-            //e.preventDefault();
-          //}
         };
         
         const keyUpHandler = (e) => {
@@ -168,7 +174,7 @@
 			
 			socket.on('updatedColor', update);
 			
-			socket.on('disconnect', removeUser);
+			socket.on('left', removeUser);
 			
 			document.body.addEventListener('keydown', keyDownHandler);
 			document.body.addEventListener('keyup', keyUpHandler);			
@@ -180,7 +186,7 @@
 <body>
 	<canvas id="canvas" height="500" width="500" style="border:1px solid #000000;"></canvas>
 	<p>Press R to make your square redder, T for less red.</p>
-	<p>Press G to make your square redder, H for less red.</p>
-	<p>Press B to make your square redder, N for less red.</p>
+	<p>Press G to make your square greener, H for less green.</p>
+	<p>Press B to make your square bluer, N for less blue.</p>
 </body>
 </html>
